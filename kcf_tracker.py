@@ -62,15 +62,15 @@ class KCFtracker():
         if(fixed_window):
             self.template_size = 96  # 将特征图的大边调整到96
         else:
-            self.template_size= 1
+            self.template_size = 1
 
     def init(self, img, x1, y1, w, h):
         # 记录中点位置
         self.cx = int(x1+w/2)
         self.cy = int(y1+h/2)
-        #记录左上角位置
-        self.x1=x1
-        self.y1=y1
+        # 记录左上角位置
+        self.x1 = x1
+        self.y1 = y1
 
         # 进行padding
         self.width = int(w*self.padding)
@@ -83,7 +83,7 @@ class KCFtracker():
         self.x = self.getFeature(img, 1)
 
         # 获取理想高斯相应
-        self.y = self.target(self.width,self.height)
+        self.y = self.target(self.x.shape[1], self.x.shape[0])
 
         # self.prev存储响应最大值的位置
         # 这里是理想响应，所以就是中心点是最大值
@@ -116,12 +116,12 @@ class KCFtracker():
         # 计算偏移
         dx = self.prev[1]-curr[1]
         dy = self.prev[0]-curr[0]
-        print(dx,dy)
+        print(dx, dy)
         # if(abs(dx)>=4 or abs(dy)>=4):
         #     print('hello')
         # 更新当前位置
-        self.cx=self.cx+dx
-        self.cy=self.cy+dy
+        self.cx = self.cx+dx
+        self.cy = self.cy+dy
         self.x1 = self.x1+dx
         self.y1 = self.y1+dy
         # 更新训练集
@@ -143,16 +143,17 @@ class KCFtracker():
 
         return k
 
-    def create_hann(self):
+    def create_hann(self, width, height):
 
-        i = np.arange(self.width)
-        j = np.arange(self.height)
+        i = np.arange(width)
+        j = np.arange(height)
         I, J = np.meshgrid(i, j)
-        self.hann = np.sin(np.pi*I/self.width)*np.sin(np.pi*J/self.height)
+        self.hann = np.sin(np.pi*I/width)*np.sin(np.pi*J/height).astype(np.float32)
 
     def getFeature(self, img, inithann=0):
 
-        window = [int(self.cx-self.width/2), int(self.cy-self.height/2), self.width, self.height]
+        window = [int(self.cx-self.width/2), int(self.cy -
+                                                 self.height/2), self.width, self.height]
         cutWin = copy.deepcopy(window)
         # 对越界的部分进行裁剪
         cutWin = limit(cutWin, [0, 0, img.shape[1], img.shape[0]])
@@ -163,6 +164,14 @@ class KCFtracker():
         if border != [0, 0, 0, 0]:
             res = cv2.copyMakeBorder(
                 res, border[1], border[3], border[0], border[2], cv2.BORDER_REPLICATE)
+        # 调整大小
+        if(self.template_size > 1):
+            if(res.shape[1] > res.shape[0]):
+                scale = res.shape[1]/self.template_size
+            elif(res.shape[0] > res.shape[1]):
+                scale = res.shape[0]/self.template_size
+            res = cv2.resize(
+                res, (int(res.shape[1]/scale), int(res.shape[0]/scale)))
 
         # 若是彩色图，则转为灰度图
         if(res.ndim == 3 and res.shape[2] == 3):
@@ -173,7 +182,7 @@ class KCFtracker():
         FeatureMap = FeatureMap.astype(np.float32)/255.0-0.5
 
         if(inithann):
-            self.create_hann()
+           self.create_hann(FeatureMap.shape[1],FeatureMap.shape[0])
 
         # 加窗
         return FeatureMap*self.hann

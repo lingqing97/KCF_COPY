@@ -41,7 +41,7 @@ def draw_boundingbox(event, x, y, flags, param):
 
 if __name__ == '__main__':
     # 读取图片
-    sequence_path = "/Users/wushukun/Desktop/热红外数据集合/tirsequences/birds/img" # your sequence path
+    sequence_path = "/Users/wushukun/Desktop/热红外数据集合/tirsequences/road1/img" # your sequence path
     frame_list=[ sequence_path+'/'+file for file in os.listdir(sequence_path)]
     frame_list=sorted(frame_list)
     # 定义跟踪器

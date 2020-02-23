@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # 读取视频流
     capture = cv2.VideoCapture(0)
     # 定义跟踪器
-    tracker = KCFtracker(False)
+    tracker = KCFtracker(True)
     # 获取检测框
     cv2.namedWindow('tracking')
     cv2.setMouseCallback('tracking', draw_boundingbox)
